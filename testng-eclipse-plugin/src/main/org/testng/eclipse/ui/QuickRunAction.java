@@ -1,17 +1,15 @@
 package org.testng.eclipse.ui;
 
-import java.util.Map;
-
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.action.Action;
 import org.testng.eclipse.TestNGPlugin;
 import org.testng.eclipse.ui.util.ConfigurationHelper;
@@ -22,7 +20,7 @@ import org.testng.eclipse.util.ResourceUtil;
 
 /**
  * A quick launcher from the TestNG viewer.
- * 
+ *
  * @author <a href='mailto:the_mindstorm[at]evolva[dot]ro'>Alexandru Popescu</a>
  */
 public class QuickRunAction extends Action {
@@ -30,13 +28,13 @@ public class QuickRunAction extends Action {
   private ILaunch m_previousRun;
   private RunInfo m_runInfo;
   private String m_runMode;
-  
+
   public QuickRunAction(IJavaProject javaProject, ILaunch prevLaunch, RunInfo runInfo, String mode) {
     m_javaProject= javaProject;
     m_previousRun= prevLaunch;
     m_runInfo= runInfo;
     m_runMode= mode;
-    
+
     initUI();
   }
 
@@ -56,39 +54,38 @@ public class QuickRunAction extends Action {
       setImageDescriptor(TestNGPlugin.getImageDescriptor("elcl16/debug.gif")); //$NON-NLS-1$
     }
   }
-  
+
   @Override
   public void run() {
-    IType itype= null;
-    IMethod imethod= null;  
+    final IMethod imethod;
     try {
-      itype = m_javaProject.findType(m_runInfo.getClassName());
-      imethod= (IMethod) JDTUtil.findElement(m_javaProject, m_runInfo); 
-    }
-    catch(JavaModelException jmex) {
-      TestNGPlugin.log(new Status(IStatus.ERROR, TestNGPlugin.PLUGIN_ID, 3333, 
-          "Cannot find method " + m_runInfo.getMethodDisplay() + " in class " + m_runInfo.getClassName(), //$NON-NLS-1$ $NON-NLS-2$
-          jmex));
-    }
-
-    if (null == imethod || m_previousRun == null) return;
-    /*
-     * The runInfo is passed along in order to preserve any 
-     * jvm args used in the original launcher when
-     * QuickRunAction is activated from the FailureTab to re-run failed 
-     * methods. 
-     */
-    ILaunchConfiguration config = m_previousRun.getLaunchConfiguration();
-    try {
+      imethod= (IMethod) JDTUtil.findElement(m_javaProject, m_runInfo);
+      /*
+       * The runInfo is passed along in order to preserve any
+       * jvm args used in the original launcher when
+       * QuickRunAction is activated from the FailureTab to re-run failed
+       * methods.
+       */
+      ILaunchConfiguration config = m_previousRun.getLaunchConfiguration();
       m_runInfo.setJvmArgs(ConfigurationHelper.getJvmArgs(config));
-      m_runInfo.setEnvironmentVariables(config.getAttribute(
-          ILaunchManager.ATTR_ENVIRONMENT_VARIABLES, (Map<String, String>) null));
-    } catch (CoreException e) {
-      TestNGPlugin.log(e);
+      Job job = new Job("Launching test") {
+        @Override
+        protected IStatus run(IProgressMonitor monitor) {
+          monitor.beginTask("Computing dependencies", 2000);
+          LaunchUtil.launchMethodConfiguration(m_javaProject,
+                                               imethod,
+                                               m_runMode, m_runInfo,
+                                               monitor);
+          return Status.OK_STATUS;
+        }
+      };
+      job.schedule();
     }
-    LaunchUtil.launchMethodConfiguration(m_javaProject, 
-        itype, imethod, 
-        m_runMode, m_runInfo);    
+    catch(CoreException jmex) {
+      TestNGPlugin.log(new Status(IStatus.ERROR, TestNGPlugin.PLUGIN_ID, 3333,
+                                  "Cannot find method " + m_runInfo.getMethodDisplay() + " in class " + m_runInfo.getClassName(), //$NON-NLS-1$ $NON-NLS-2$
+                                  jmex));
+    }
   }
-  
+
 }

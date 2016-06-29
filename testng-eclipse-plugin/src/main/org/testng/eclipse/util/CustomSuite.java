@@ -3,7 +3,6 @@ package org.testng.eclipse.util;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -16,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.testng.TestNGException;
 import org.testng.eclipse.TestNGPlugin;
 import org.testng.internal.Utils;
@@ -27,10 +26,6 @@ import org.testng.xml.LaunchSuite;
 import org.testng.xml.Parser;
 import org.testng.xml.XmlMethodSelector;
 import org.testng.xml.XmlSuite;
-import org.xml.sax.SAXException;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 /**
  * Base class used by classes that generate XML suite files.
@@ -277,6 +272,11 @@ abstract public class CustomSuite extends LaunchSuite {
 //      testAttrs.setProperty("annotations", m_annotationType);
 //    }
     testAttrs.setProperty("verbose", String.valueOf(m_logLevel));
+
+    /* Since we're pulling dependencies automatically, the default order
+     * is usually not right, let's testng runtime compute the correct order.
+     */
+    testAttrs.setProperty("preserve-order", "false");
 
     suiteBuffer.push("test", testAttrs);
 
