@@ -406,13 +406,8 @@ public class SummaryTab extends TestRunTab  {
   }
 
   @Override
-  public void updateTestResult(List<RunInfo> results) {
-    if (results.size() > 0) {
-      aboutToStart(); // do a reset
-      for (RunInfo ri : results) {
-        updateTestResult(ri, false /* unused param in this tab */);
-      }
-    }
+  public void updateTestResult(Map<String, RunInfo> results) {
+    m_testViewer.refresh();
   }
   
   @Override

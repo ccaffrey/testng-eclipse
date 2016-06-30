@@ -224,20 +224,20 @@ public class ProgressBar extends Canvas {
     return size;
   }
 
-  public void step(boolean isSuccess) {
+  public void step(int failures) {
     m_currentTickCount++;
     m_methodsCounter++;
-    int x = m_colorBarWidth;
-
-    m_colorBarWidth = scale(m_currentTickCount);
-    if (m_error == ITestResult.SUCCESS && !isSuccess) {
+    if (m_error == ITestResult.SUCCESS && (failures > 0)) {
       m_error = ITestResult.FAILURE;
-      x = 1;
     }
+  }
+
+  public void updateProgress() {
+    m_colorBarWidth = scale(m_currentTickCount);
     if (m_currentTickCount == m_maxTickCount) {
       m_colorBarWidth = getClientArea().width - 1;
     }
-//    paintStep(x, m_colorBarWidth);
+    redraw();
   }
 
   public void stepTests() {

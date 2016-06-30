@@ -6,6 +6,7 @@ import org.eclipse.ui.IMemento;
 import org.testng.eclipse.util.ResourceUtil;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A TestRunTab is shown as a tab in a tabbed folder.
@@ -104,6 +105,6 @@ public abstract class TestRunTab {
   public void setOrientation(boolean horizontal) {
   }
 
-  public void updateTestResult(List<RunInfo> results) {
+  public void updateTestResult(Map<String, RunInfo> results) {
   }
 }

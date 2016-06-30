@@ -188,7 +188,7 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
   public static final String ID_EXTENSION_POINT_TESTRUN_TABS = TestNGPlugin.PLUGIN_ID + "." //$NON-NLS-1$
       + "internal_testRunTabs";  //$NON-NLS-1$
 
-  private static final int REFRESH_INTERVAL = 200;
+  private static final int THROTTLE_UI_UPDATE_DELAY_MS = 500;
 
   // Persistence tags.
   private static final String TAG_PAGE = "page"; //$NON-NLS-1$
@@ -351,7 +351,7 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
 
   private void stopUpdateJobs() {
     if(m_updateUIJob != null) {
-      m_updateUIJob.stop();
+      m_updateUIJob.cancel();
       m_updateUIJob = null;
     }
     if((m_isRunningJob != null) && (m_runLock != null)) {
@@ -1053,7 +1053,6 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
    * Background job running in UI thread for updating components info.
    */
   class UpdateUIJob extends UIJob {
-    private volatile boolean fRunning = true;
 
     public UpdateUIJob(String name) {
       super(name);
@@ -1063,23 +1062,16 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
     @Override
     public IStatus runInUIThread(IProgressMonitor monitor) {
       if(!isDisposed()) {
-//        doShowStatus();
+        for (TestRunTab tab : ALL_TABS) {
+          tab.updateTestResult(currentSuiteRunInfo.getResults());
+        }
+        fProgressBar.updateProgress();
         refreshCounters();
-//        m_progressBar.redraw();
       }
-      schedule(REFRESH_INTERVAL);
 
       return Status.OK_STATUS;
     }
 
-    public void stop() {
-      fRunning = false;
-    }
-
-    @Override
-    public boolean shouldSchedule() {
-      return fRunning;
-    }
   }
 
   class IsRunningJob extends Job {
@@ -1124,21 +1116,13 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
 
   private void postTestResult(final RunInfo runInfo, final boolean isSuccess) {
     currentSuiteRunInfo.add(runInfo);
+    if (runInfo.getStatus() != ITestResult.STARTED) {
+      fProgressBar.step(isSuccess ? 0 : 1);
+    }
 
-//    long start = System.currentTimeMillis();
-
-    postSyncRunnable(new Runnable() {
-      public void run() {
-        if(isDisposed()) {
-          return;
-        }
-
-        fProgressBar.step(isSuccess);
-        for (TestRunTab tab : ALL_TABS) {
-          tab.updateTestResult(runInfo, true /* expand */);
-        }
-      }
-    });
+    m_summaryTab.updateTestResult(runInfo, false);
+    m_updateUIJob.cancel();
+    m_updateUIJob.schedule(THROTTLE_UI_UPDATE_DELAY_MS);
 //    System.out.println("Time to post:" + (System.currentTimeMillis() - start));
   }
 
@@ -1274,7 +1258,6 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
     // the wrapper job will wait on this lock.
     m_runLock.acquire();
     getProgressService().schedule(m_isRunningJob);
-    m_updateUIJob.schedule(REFRESH_INTERVAL);
   }
 
   public void onFinish(SuiteMessage suiteMessage) {
@@ -1467,6 +1450,7 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
    */
   public void onTestStart(TestResultMessage trm) {
 //    System.out.println("[INFO:onTestStart]:" + trm.getMessageAsString());
+    postTestResult(createRunInfo(trm, null, ITestResult.STARTED), true);
   }
 
   public void onStart(SuiteMessage suiteMessage) {

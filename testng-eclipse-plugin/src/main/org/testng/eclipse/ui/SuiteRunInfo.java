@@ -2,7 +2,9 @@ package org.testng.eclipse.ui;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import com.beust.jcommander.internal.Maps;
 import org.eclipse.debug.core.ILaunch;
 import org.testng.ITestResult;
 import org.testng.remote.strprotocol.GenericMessage;
@@ -39,7 +41,7 @@ public class SuiteRunInfo implements IRemoteSuiteListener, IRemoteTestListener {
   private long m_startTime;
   private long m_stopTime;
 
-  private List<RunInfo> m_results = Lists.newArrayList();
+  private Map<String, RunInfo> m_results = Maps.newLinkedHashMap();
 
   /**
    * The launcher that has started the test. May be used for reruns.
@@ -204,8 +206,8 @@ public class SuiteRunInfo implements IRemoteSuiteListener, IRemoteTestListener {
     return m_methodTotalCount;
   }
 
-  public List<RunInfo> getResults() {
-    return Collections.unmodifiableList(m_results);
+  public Map<String, RunInfo> getResults() {
+    return Collections.unmodifiableMap(m_results);
   }
 
   public int getNbResults() {
@@ -213,7 +215,7 @@ public class SuiteRunInfo implements IRemoteSuiteListener, IRemoteTestListener {
   }
 
   public void add(RunInfo runInfo) {
-    this.m_results.add(runInfo);
+    this.m_results.put(runInfo.getId(), runInfo);
   }
 
   public void setSuitesTotalCount(int suitesTotalCount) {

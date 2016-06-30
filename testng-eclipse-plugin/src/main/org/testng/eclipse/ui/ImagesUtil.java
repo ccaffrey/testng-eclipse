@@ -7,6 +7,8 @@ public class ImagesUtil {
 
   public static Image getImage(int state) {
     switch(state) {
+      case ITestResult.STARTED:
+        return Images.getImage(Images.IMG_TEST_RUN);
       case ITestResult.SUCCESS:
         return Images.getImage(Images.IMG_TEST_OK);
       case ITestResult.FAILURE:
@@ -24,6 +26,8 @@ public class ImagesUtil {
    */
   public static Image getSuiteImage(int state) {
     switch(state) {
+      case ITestResult.STARTED:
+        return Images.getImage(Images.IMG_SUITE_RUN);
       case ITestResult.SUCCESS:
         return Images.getImage(Images.IMG_SUITE_OK);
       case ITestResult.FAILURE:

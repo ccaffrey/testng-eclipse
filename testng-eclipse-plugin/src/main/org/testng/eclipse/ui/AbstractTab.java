@@ -330,10 +330,10 @@ abstract public class AbstractTab extends TestRunTab implements IMenuListener {
   }
 
   @Override
-  public void updateTestResult(List<RunInfo> results) {
+  public void updateTestResult(Map<String, RunInfo> results) {
     if (results.size() > 0) {
       reset();
-      for (RunInfo ri : results) {
+      for (RunInfo ri : results.values()) {
         updateTestResult(ri, false /* don't expand, we'll do that at the end */);
       }
     }
